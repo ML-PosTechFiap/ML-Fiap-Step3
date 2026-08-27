@@ -1,0 +1,16 @@
+.venv/
+.uv-python/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.env
+.idea/
+.vscode/
+**/data/raw/
+**/data/processed/
+**/models/*.joblib
+**/models/*.onnx
+MLET - Tech Challenge Fase 3.pdf

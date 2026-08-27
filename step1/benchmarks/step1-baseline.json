@@ -1,0 +1,15 @@
+{
+  "step": "step1",
+  "classifier": "step1-rule-based-v1",
+  "measured_at_utc": "2026-08-27T00:34:04.937713+00:00",
+  "endpoint": "http://127.0.0.1:8000/predict",
+  "warmup_requests": 50,
+  "measured_requests": 500,
+  "latency_ms": {
+    "minimum": 1.626,
+    "mean": 8.761,
+    "median": 2.47,
+    "p95": 26.056,
+    "maximum": 28.503
+  }
+}
