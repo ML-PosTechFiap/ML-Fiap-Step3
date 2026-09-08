@@ -1,0 +1,76 @@
+name: Step 4 stack smoke test
+
+# Builds and runs the full docker-compose.yml (trainer -> api -> prometheus
+# -> grafana), checking the whole chain works with the ONNX-optimized model
+# specifically: the trainer's convert_to_onnx.py step (needs the en_US.UTF-8
+# locale — see step4/README.md) succeeds, and the API ends up serving the
+# ONNX classifier by default (TRIAGE_CLASSIFIER_BACKEND=auto). Kept out of
+# the main CI gate (ci.yml) — slow (full dataset download + train + ONNX
+# conversion) and depends on external services — so it runs on a schedule
+# and on demand instead of on every push/PR.
+on:
+  schedule:
+    - cron: "0 8 * * 1" # weekly, Monday 08:00 UTC (an hour after step3's)
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    name: Build, run and probe the ONNX-optimized stack
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: step4
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build and start the stack
+        run: docker compose up --build -d --wait --wait-timeout 300
+
+      - name: API serves the ONNX model by default, not a fallback
+        run: |
+          health=$(curl -sf http://localhost:8000/health)
+          echo "$health"
+          echo "$health" | grep -q '"classifier_version":"step2-tfidf-logreg-v1-onnx"'
+
+      - name: Drive traffic through /predict
+        run: |
+          for i in $(seq 1 10); do
+            curl -sf -X POST http://localhost:8000/predict \
+              -H "Content-Type: application/json" \
+              -d '{"report":"Patient reports severe chest pain and shortness of breath."}' > /dev/null
+          done
+
+      - name: API exposes real Prometheus counters
+        run: |
+          metrics=$(curl -sf http://localhost:8000/metrics)
+          echo "$metrics" | grep -q 'path="/predict"'
+
+      - name: Prometheus target is up
+        run: |
+          sleep 10
+          target_health=$(curl -sf http://localhost:9090/api/v1/targets \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['data']['activeTargets'][0]['health'])")
+          echo "target health: $target_health"
+          test "$target_health" = "up"
+
+      - name: Grafana dashboard queries real data through Prometheus
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health > /dev/null; then break; fi
+            sleep 2
+          done
+          ds_uid=$(curl -sf http://localhost:3000/api/datasources \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)[0]['uid'])")
+          result=$(curl -sf -G "http://localhost:3000/api/datasources/proxy/uid/$ds_uid/api/v1/query" \
+            --data-urlencode 'query=sum(http_requests_total{path="/predict"})')
+          echo "$result"
+          echo "$result" | grep -q '"status":"success"'
+          echo "$result" | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['data']['result'], 'no data returned'"
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

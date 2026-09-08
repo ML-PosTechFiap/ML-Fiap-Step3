@@ -13,5 +13,7 @@ htmlcov/
 **/data/processed/
 **/models/*.joblib
 **/models/*.onnx
+**/models/*.onnx.json
 **/models/current_model.json
+**/models/current_onnx_model.json
 MLET - Tech Challenge Fase 3.pdf

@@ -1,0 +1,80 @@
+# Step 4 stack: train, optimize, serve the optimized model, observe it.
+#
+#   trainer  -> runs the Step 2 pipeline (download -> clean -> train), then
+#               converts the result to ONNX (verified against the sklearn
+#               pipeline's predict_proba — see scripts/convert_to_onnx.py),
+#               writes both artifacts to the shared `models` volume, exits.
+#   api      -> the API, evolved to serve the ONNX model by default
+#               (TRIAGE_CLASSIFIER_BACKEND=auto picks ONNX over scikit-learn
+#               over the Step 1 rule-based fallback — see main.py) and
+#               expose Prometheus metrics at /metrics.
+#   prometheus -> scrapes api:8000/metrics every 5s.
+#   grafana    -> pre-provisioned with the Prometheus datasource and the
+#                 "Triage API" dashboard (requests, latency, errors).
+#
+# Usage:
+#   cd step4
+#   docker compose up --build
+#   # Grafana:    http://localhost:3000  (anonymous viewer access)
+#   # Prometheus: http://localhost:9090
+#   # API:        http://localhost:8000/docs
+#
+# To benchmark scikit-learn vs ONNX side by side instead of just serving the
+# optimized model, see the "Benchmark: original vs. optimized" section in
+# README.md — it runs this same image twice with TRIAGE_CLASSIFIER_BACKEND
+# forced to each value via `docker run`, not part of this compose file.
+services:
+  trainer:
+    build: .
+    command: >
+      sh -c "python scripts/download_dataset.py &&
+             python scripts/prepare_dataset.py &&
+             python scripts/train_model.py &&
+             python scripts/convert_to_onnx.py"
+    environment:
+      PYTHONPATH: /app/scripts
+    volumes:
+      - data:/app/data
+      - models:/app/models
+    restart: "no"
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      TRIAGE_MODELS_DIR: /app/models
+      TRIAGE_CLASSIFIER_BACKEND: auto
+    volumes:
+      - models:/app/models:ro
+    depends_on:
+      trainer:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  data:
+  models:

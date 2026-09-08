@@ -18,7 +18,7 @@ demonstrável mesmo depois da conclusão de `step2/`, `step3/` e `step4/`.
 | Step 1 | **Concluído** | Decisão de arquitetura, API FastAPI, Docker e latência baseline | API containerizada e benchmark local |
 | Step 2 | **Concluído** | Pipeline de dados, GitHub Actions e DAG Airflow de retreino | Workflow verde e DAG funcional |
 | Step 3 | **Concluído** | API servindo o modelo treinado, Prometheus e Grafana via Docker Compose | Dashboard com requisições, latência e erros |
-| Step 4 | Planejado | Modelo NLP treinado e otimização ONNX | Comparação original versus otimizado e vídeo STAR |
+| Step 4 | **Concluído** (falta só o vídeo STAR) | Modelo convertido para ONNX, comparação real de latência | Comparação original versus otimizado e vídeo STAR |
 
 Os commits devem seguir Conventional Commits com escopo por etapa:
 
@@ -225,7 +225,9 @@ reutilizará o mesmo script e ambiente para comparar o modelo original com o ONN
 │   ├── scripts/, dags/      # copied from Step 2 unchanged
 │   ├── prometheus/, grafana/
 │   └── docker-compose.yml
-├── step4/                  # Próximo snapshot: modelo final e ONNX
+├── step4/                  # Concluído: modelo convertido para ONNX + benchmark real
+│   ├── scripts/convert_to_onnx.py
+│   └── benchmarks/{step4-sklearn,step4-onnx}.json
 └── README.md               # Índice e histórico da evolução
 ```
 
@@ -239,5 +241,10 @@ sido treinado ainda) e adicionou métricas Prometheus + dashboard Grafana provis
 que a instrumentação Prometheus é manual (`prometheus-client`) em vez de usar
 `prometheus-fastapi-instrumentator`.
 
-O Step 4 vai treinar um modelo melhor e otimizar via ONNX, comparando latência original versus
-otimizada com o mesmo `step1/scripts/benchmark.py`.
+O Step 4 converteu o mesmo modelo treinado (`step2-tfidf-logreg-v1`) para ONNX via `skl2onnx`
+(com verificação numérica contra o `predict_proba` original antes de gravar qualquer coisa) e
+comparou a latência real original versus otimizada com o mesmo `scripts/benchmark.py` do Step 1 —
+mediana 25,5% mais rápida no ONNX (7,37 ms → 5,49 ms), ver `step4/README.md` para a tabela
+completa e dois bugs reais encontrados só ao rodar de verdade (locale ausente na imagem slim do
+Docker para o `onnxruntime`, e a mesma dependência faltando na imagem padrão do Airflow). Falta
+apenas gravar o vídeo STAR, que não é algo que este assistente possa fazer.

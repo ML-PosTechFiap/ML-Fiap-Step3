@@ -1,0 +1,14 @@
+{
+  "classifier": "step2-tfidf-logreg-v1-onnx",
+  "measured_at_utc": "2026-09-08T23:21:51.903280+00:00",
+  "endpoint": "http://127.0.0.1:8000/predict",
+  "warmup_requests": 50,
+  "measured_requests": 500,
+  "latency_ms": {
+    "minimum": 3.903,
+    "mean": 10.253,
+    "median": 5.487,
+    "p95": 28.276,
+    "maximum": 33.462
+  }
+}

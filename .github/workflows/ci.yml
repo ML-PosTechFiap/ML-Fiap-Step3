@@ -83,3 +83,32 @@ jobs:
         # Same "unit tests only" scope as step2: the ML-classifier and
         # training tests use tiny synthetic data, not the live dataset.
         run: uv run pytest
+
+  step4:
+    name: Step 4 — ONNX optimization
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: step4
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: step4/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        # Same "unit tests only" scope as step2/step3: trains a tiny model
+        # on synthetic data, converts it to ONNX, and checks the two agree —
+        # no live dataset, no Docker, so no locale-package dependency here
+        # (see step4/README.md for that finding, which only bites at
+        # container-build / Airflow-runtime).
+        run: uv run pytest
