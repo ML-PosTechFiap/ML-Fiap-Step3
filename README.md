@@ -16,7 +16,7 @@ demonstrável mesmo depois da conclusão de `step2/`, `step3/` e `step4/`.
 | Step | Estado | Evolução principal | Evidência esperada |
 |---|---|---|---|
 | Step 1 | **Concluído** | Decisão de arquitetura, API FastAPI, Docker e latência baseline | API containerizada e benchmark local |
-| Step 2 | **Em andamento** | Pipeline de dados reprodutível concluído; GitHub Actions e DAG Airflow pendentes | Workflow verde e DAG funcional |
+| Step 2 | **Em andamento** | Pipeline de dados e GitHub Actions concluídos; DAG Airflow pendente | Workflow verde e DAG funcional |
 | Step 3 | Planejado | Prometheus, Grafana e Docker Compose | Dashboard com requisições, latência e erros |
 | Step 4 | Planejado | Modelo NLP treinado e otimização ONNX | Comparação original versus otimizado e vídeo STAR |
 
@@ -203,6 +203,7 @@ reutilizará o mesmo script e ambiente para comparar o modelo original com o ONN
 
 ```text
 .
+├── .github/workflows/       # CI (Step 2): lint+testes e smoke test do dataset
 ├── step1/                  # API inicial, Docker e baseline
 │   ├── benchmarks/
 │   ├── scripts/benchmark.py
@@ -212,7 +213,11 @@ reutilizará o mesmo script e ambiente para comparar o modelo original com o ONN
 │   ├── pyproject.toml
 │   ├── requirements.txt
 │   └── uv.lock
-├── step2/                  # Em andamento: pipeline de dados pronto; CI/CD e Airflow pendentes
+├── step2/                  # Em andamento: pipeline de dados e CI prontos; DAG Airflow pendente
+│   ├── docs/dataset.md
+│   ├── scripts/{download_dataset,prepare_dataset}.py
+│   ├── tests/
+│   └── pyproject.toml
 ├── step3/                  # Próximo snapshot: Prometheus e Grafana
 ├── step4/                  # Próximo snapshot: modelo final e ONNX
 └── README.md               # Índice e histórico da evolução
