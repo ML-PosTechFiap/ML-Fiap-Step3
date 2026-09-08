@@ -16,7 +16,7 @@ demonstrável mesmo depois da conclusão de `step2/`, `step3/` e `step4/`.
 | Step | Estado | Evolução principal | Evidência esperada |
 |---|---|---|---|
 | Step 1 | **Concluído** | Decisão de arquitetura, API FastAPI, Docker e latência baseline | API containerizada e benchmark local |
-| Step 2 | **Em andamento** | Pipeline de dados e GitHub Actions concluídos; DAG Airflow pendente | Workflow verde e DAG funcional |
+| Step 2 | **Concluído** | Pipeline de dados, GitHub Actions e DAG Airflow de retreino | Workflow verde e DAG funcional |
 | Step 3 | Planejado | Prometheus, Grafana e Docker Compose | Dashboard com requisições, latência e erros |
 | Step 4 | Planejado | Modelo NLP treinado e otimização ONNX | Comparação original versus otimizado e vídeo STAR |
 
@@ -213,10 +213,12 @@ reutilizará o mesmo script e ambiente para comparar o modelo original com o ONN
 │   ├── pyproject.toml
 │   ├── requirements.txt
 │   └── uv.lock
-├── step2/                  # Em andamento: pipeline de dados e CI prontos; DAG Airflow pendente
+├── step2/                  # Concluído: pipeline de dados, CI e DAG Airflow de retreino
+│   ├── dags/triage_retraining_dag.py
 │   ├── docs/dataset.md
-│   ├── scripts/{download_dataset,prepare_dataset}.py
+│   ├── scripts/{download_dataset,prepare_dataset,train_model}.py
 │   ├── tests/
+│   ├── docker-compose.airflow.yml
 │   └── pyproject.toml
 ├── step3/                  # Próximo snapshot: Prometheus e Grafana
 ├── step4/                  # Próximo snapshot: modelo final e ONNX
@@ -225,5 +227,7 @@ reutilizará o mesmo script e ambiente para comparar o modelo original com o ONN
 
 ## Próximo incremento
 
-O Step 2 adicionará lint e testes no GitHub Actions e uma DAG Airflow para ingestão, treino e
-persistência do artefato, mantendo o mesmo contrato HTTP criado aqui.
+O Step 2 entregou lint e testes no GitHub Actions e uma DAG Airflow para ingestão, treino e
+persistência do artefato (ver `step2/README.md`). O Step 3 adicionará Prometheus, Grafana e
+Docker Compose — o que exige copiar a API do Step 1 para dentro do Step 2/3 servindo o modelo
+treinado (`models/current_model.json`) no lugar do classificador baseado em regras.

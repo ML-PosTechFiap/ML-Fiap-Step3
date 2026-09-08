@@ -1,0 +1,26 @@
+# Local-only Airflow for running the triage_retraining DAG interactively.
+# Single container (`airflow standalone`: webserver + scheduler + triggerer,
+# SQLite metadata DB) — a demo setup for this coursework project, not a
+# production topology.
+#
+# Usage:
+#   cd step2
+#   docker compose -f docker-compose.airflow.yml up
+#   # watch the logs for the auto-generated admin password, then open
+#   http://localhost:8080
+#
+# The whole step2/ directory is mounted so the DAG (step2/dags/) can import
+# step2/scripts/ and read/write step2/data/ and step2/models/ exactly like
+# it does outside Airflow.
+services:
+  airflow:
+    image: apache/airflow:latest
+    container_name: triage-airflow-standalone
+    command: standalone
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    volumes:
+      - ./:/opt/airflow/project

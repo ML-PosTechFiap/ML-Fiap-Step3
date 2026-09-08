@@ -1,0 +1,21 @@
+{
+  "model_version": "step2-tfidf-logreg-v1",
+  "train_rows": 32572,
+  "test_rows": 8143,
+  "accuracy": 0.7169347906177085,
+  "precision_urgent": 0.4883248730964467,
+  "recall_urgent": 0.6453488372093024,
+  "f1_urgent": 0.5559622423425159,
+  "roc_auc": 0.7648728215182679,
+  "confusion_matrix": {
+    "true_non_urgent_pred_non_urgent": 4395,
+    "true_non_urgent_pred_urgent": 1512,
+    "true_urgent_pred_non_urgent": 793,
+    "true_urgent_pred_urgent": 1443
+  },
+  "three_class_thresholds": {
+    "normal_below": 0.2931048741132516,
+    "urgent_at_or_above": 0.5253227179738562,
+    "method": "33%/67% percentile of p(urgent) on the held-out test set \u2014 a heuristic, not a clinically validated cutoff"
+  }
+}
