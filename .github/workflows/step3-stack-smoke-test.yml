@@ -54,6 +54,11 @@ jobs:
 
       - name: Grafana dashboard queries real data through Prometheus
         run: |
+          echo "Waiting for Grafana to finish provisioning..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health > /dev/null; then break; fi
+            sleep 2
+          done
           ds_uid=$(curl -sf http://localhost:3000/api/datasources \
             | python3 -c "import json,sys; print(json.load(sys.stdin)[0]['uid'])")
           result=$(curl -sf -G "http://localhost:3000/api/datasources/proxy/uid/$ds_uid/api/v1/query" \
