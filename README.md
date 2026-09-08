@@ -16,7 +16,7 @@ demonstrável mesmo depois da conclusão de `step2/`, `step3/` e `step4/`.
 | Step | Estado | Evolução principal | Evidência esperada |
 |---|---|---|---|
 | Step 1 | **Concluído** | Decisão de arquitetura, API FastAPI, Docker e latência baseline | API containerizada e benchmark local |
-| Step 2 | Planejado | GitHub Actions e pipeline de retreino com Airflow | Workflow verde e DAG funcional |
+| Step 2 | **Em andamento** | Pipeline de dados reprodutível concluído; GitHub Actions e DAG Airflow pendentes | Workflow verde e DAG funcional |
 | Step 3 | Planejado | Prometheus, Grafana e Docker Compose | Dashboard com requisições, latência e erros |
 | Step 4 | Planejado | Modelo NLP treinado e otimização ONNX | Comparação original versus otimizado e vídeo STAR |
 
@@ -104,24 +104,30 @@ Resposta esperada:
 }
 ```
 
-## Dataset recomendado
+## Dataset
 
-O dataset principal recomendado é o
-[MIMIC-IV-ED v2.2 no PhysioNet](https://physionet.org/content/mimic-iv-ed/2.2/).
-Ele possui aproximadamente 425 mil passagens por emergência. A tabela `triage` contém:
+### Dataset usado: `myothiha/triage_dataset`
 
-- `chiefcomplaint`: texto livre informado na triagem;
-- `acuity`: severidade de 1, mais grave, até 5, menos grave.
+O treino usa o [`myothiha/triage_dataset`](https://huggingface.co/datasets/myothiha/triage_dataset)
+(MIT, 42.513 textos, também espelhado no Kaggle). Ele é baixado e validado de forma reprodutível
+pelos scripts em `step2/scripts/` — sem conta, chave de API ou credenciamento — e documentado em
+detalhe em [`step2/docs/dataset.md`](step2/docs/dataset.md): estrutura bruta, achados da validação
+(duplicatas, rótulos conflitantes, textos curtos demais) e a decisão de mapeamento de rótulos.
 
-### Como obter
+O dataset traz apenas rótulo binário (`urgent` / `non-urgent`), enquanto a API expõe três classes
+(`normal` / `attention` / `urgent`). Em vez de inventar um rótulo `attention` sem groundtruth, o
+Step 4 treina um classificador binário e deriva as três faixas por thresholds de probabilidade
+calibrados — ver detalhes em `step2/docs/dataset.md`.
 
-1. Criar uma conta no PhysioNet.
-2. Solicitar o status de usuário credenciado.
-3. Concluir o treinamento `CITI Data or Specimens Only Research`.
-4. Assinar o Data Use Agreement do MIMIC-IV-ED.
-5. Baixar a tabela `triage` da versão 2.2 e mantê-la em `data/raw/`, que não é versionada.
+### Alternativa avaliada e não usada: MIMIC-IV-ED
 
-Mapeamento inicial a ser validado metodologicamente no Step 4:
+O [MIMIC-IV-ED v2.2 no PhysioNet](https://physionet.org/content/mimic-iv-ed/2.2/) foi avaliado
+primeiro por ser clinicamente mais próximo do problema (≈425 mil passagens por emergência, com
+`chiefcomplaint` e `acuity` de 1 a 5 na tabela `triage`). Ele **não** foi adotado porque exige
+credenciamento no PhysioNet (conta, treinamento `CITI Data or Specimens Only Research`, assinatura
+do Data Use Agreement) — uma barreira incompatível com um pipeline reproduzível em CI. Fica
+documentado aqui como caminho válido para uma eventual evolução clínica do projeto; o mapeamento
+`acuity` → classe do projeto que havia sido pensado para ele era:
 
 | Acuity original | Classe do projeto |
 |---|---|
@@ -129,12 +135,9 @@ Mapeamento inicial a ser validado metodologicamente no Step 4:
 | 3 | `attention` |
 | 4–5 | `normal` |
 
-Esse agrupamento é uma simplificação acadêmica e não representa um protocolo clínico validado.
-
 O [Medical Abstracts TC Corpus](https://github.com/sebischair/Medical-Abstracts-TC-Corpus)
-citado no enunciado é mais fácil de baixar e contém 14.438 textos, mas suas cinco classes são
-categorias de doenças, não níveis de urgência. Ele pode servir para experimentar o pipeline, mas
-não é a recomendação para a entrega final de triagem.
+citado no enunciado também foi avaliado e descartado: é fácil de baixar e tem 14.438 textos, mas
+suas cinco classes são categorias de doenças, não níveis de urgência.
 
 ## Execução local
 
@@ -209,7 +212,7 @@ reutilizará o mesmo script e ambiente para comparar o modelo original com o ONN
 │   ├── pyproject.toml
 │   ├── requirements.txt
 │   └── uv.lock
-├── step2/                  # Próximo snapshot: CI/CD e Airflow
+├── step2/                  # Em andamento: pipeline de dados pronto; CI/CD e Airflow pendentes
 ├── step3/                  # Próximo snapshot: Prometheus e Grafana
 ├── step4/                  # Próximo snapshot: modelo final e ONNX
 └── README.md               # Índice e histórico da evolução
