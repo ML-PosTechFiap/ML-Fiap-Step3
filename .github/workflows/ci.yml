@@ -57,3 +57,29 @@ jobs:
         # scripts/download_dataset.py + prepare_dataset.py are exercised
         # separately by dataset-smoke-test.yml.
         run: uv run pytest
+
+  step3:
+    name: Step 3 — API + observability
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: step3
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: step3/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        # Same "unit tests only" scope as step2: the ML-classifier and
+        # training tests use tiny synthetic data, not the live dataset.
+        run: uv run pytest

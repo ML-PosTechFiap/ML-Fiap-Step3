@@ -1,0 +1,70 @@
+# Step 3 stack: train once, serve the model, observe it.
+#
+#   trainer  -> runs the Step 2 pipeline (download -> clean -> train) once,
+#               writes the model artifact to the shared `models` volume, exits.
+#   api      -> Step 1's API, evolved to load that artifact (falls back to
+#               the Step 1 rule-based classifier if the trainer hasn't
+#               produced one yet) and expose Prometheus metrics at /metrics.
+#   prometheus -> scrapes api:8000/metrics every 5s.
+#   grafana    -> pre-provisioned with the Prometheus datasource and the
+#                 "Triage API" dashboard (requests, latency, errors).
+#
+# Usage:
+#   cd step3
+#   docker compose up --build
+#   # Grafana:    http://localhost:3000  (admin/admin, change on first login)
+#   # Prometheus: http://localhost:9090
+#   # API:        http://localhost:8000/docs
+services:
+  trainer:
+    build: .
+    command: >
+      sh -c "python scripts/download_dataset.py &&
+             python scripts/prepare_dataset.py &&
+             python scripts/train_model.py"
+    environment:
+      PYTHONPATH: /app/scripts
+    volumes:
+      - data:/app/data
+      - models:/app/models
+    restart: "no"
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      TRIAGE_MODELS_DIR: /app/models
+    volumes:
+      - models:/app/models:ro
+    depends_on:
+      trainer:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  data:
+  models:

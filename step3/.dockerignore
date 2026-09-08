@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+.uv-python
+__pycache__
+.pytest_cache
+.ruff_cache
+data
+models
+tests
+docs
+grafana
+prometheus
+*.pdf

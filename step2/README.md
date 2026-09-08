@@ -77,5 +77,6 @@ the DAG parsed with 0 errors.
 
 ## Still planned
 
-- Copy Step 1's API into this snapshot to serve `models/current_model.json` instead of the Step 1
-  rule-based classifier — natural to do once Step 3 needs a running API to add observability to.
+Nothing — Step 3 (`../step3/`) copies this pipeline forward, adds the API back (serving
+`models/current_model.json` instead of the Step 1 rule-based classifier), and layers Prometheus +
+Grafana on top.

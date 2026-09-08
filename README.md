@@ -17,7 +17,7 @@ demonstrável mesmo depois da conclusão de `step2/`, `step3/` e `step4/`.
 |---|---|---|---|
 | Step 1 | **Concluído** | Decisão de arquitetura, API FastAPI, Docker e latência baseline | API containerizada e benchmark local |
 | Step 2 | **Concluído** | Pipeline de dados, GitHub Actions e DAG Airflow de retreino | Workflow verde e DAG funcional |
-| Step 3 | Planejado | Prometheus, Grafana e Docker Compose | Dashboard com requisições, latência e erros |
+| Step 3 | **Concluído** | API servindo o modelo treinado, Prometheus e Grafana via Docker Compose | Dashboard com requisições, latência e erros |
 | Step 4 | Planejado | Modelo NLP treinado e otimização ONNX | Comparação original versus otimizado e vídeo STAR |
 
 Os commits devem seguir Conventional Commits com escopo por etapa:
@@ -220,14 +220,24 @@ reutilizará o mesmo script e ambiente para comparar o modelo original com o ONN
 │   ├── tests/
 │   ├── docker-compose.airflow.yml
 │   └── pyproject.toml
-├── step3/                  # Próximo snapshot: Prometheus e Grafana
+├── step3/                  # Concluído: API + modelo treinado + Prometheus + Grafana
+│   ├── src/triage_api/      # Step 1's API, evolved with MLTriageClassifier
+│   ├── scripts/, dags/      # copied from Step 2 unchanged
+│   ├── prometheus/, grafana/
+│   └── docker-compose.yml
 ├── step4/                  # Próximo snapshot: modelo final e ONNX
 └── README.md               # Índice e histórico da evolução
 ```
 
 ## Próximo incremento
 
-O Step 2 entregou lint e testes no GitHub Actions e uma DAG Airflow para ingestão, treino e
-persistência do artefato (ver `step2/README.md`). O Step 3 adicionará Prometheus, Grafana e
-Docker Compose — o que exige copiar a API do Step 1 para dentro do Step 2/3 servindo o modelo
-treinado (`models/current_model.json`) no lugar do classificador baseado em regras.
+O Step 3 copiou a API do Step 1 e o pipeline do Step 2 para dentro de `step3/`, plugou o modelo
+treinado no lugar do classificador por regras (com fallback automático caso nenhum modelo tenha
+sido treinado ainda) e adicionou métricas Prometheus + dashboard Grafana provisionado
+(requisições, latência p50/p95 e taxa de erro), tudo orquestrado por `step3/docker-compose.yml`
+(`trainer` → `api` → `prometheus` → `grafana`). Ver `step3/README.md` para detalhes, incluindo por
+que a instrumentação Prometheus é manual (`prometheus-client`) em vez de usar
+`prometheus-fastapi-instrumentator`.
+
+O Step 4 vai treinar um modelo melhor e otimizar via ONNX, comparando latência original versus
+otimizada com o mesmo `step1/scripts/benchmark.py`.
