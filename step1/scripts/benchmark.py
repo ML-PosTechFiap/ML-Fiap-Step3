@@ -14,7 +14,10 @@ DEFAULT_PAYLOAD = {"report": "Patient reports persistent chest pain and difficul
 
 def send_request(url: str) -> float:
     """Send one prediction request and return elapsed milliseconds."""
-    request = urllib.request.Request(
+    # url is a developer-supplied --url CLI argument (a local/CI benchmark
+    # target), never untrusted input, so the scheme it could carry isn't a
+    # real risk here.
+    request = urllib.request.Request(  # noqa: S310
         url,
         data=json.dumps(DEFAULT_PAYLOAD).encode("utf-8"),
         headers={"Content-Type": "application/json"},

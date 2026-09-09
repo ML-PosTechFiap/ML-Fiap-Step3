@@ -1,5 +1,7 @@
 """Unit tests for the rule-based, scikit-learn, and ONNX classifiers."""
 
+import json
+
 import pandas as pd
 import pytest
 from convert_to_onnx import convert, verify
@@ -53,7 +55,7 @@ class _StubPipeline:
     def __init__(self, probability_urgent: float) -> None:
         self._probability_urgent = probability_urgent
 
-    def predict_proba(self, texts: list[str]) -> list[list[float]]:
+    def predict_proba(self, _texts: list[str]) -> list[list[float]]:
         return [[1 - self._probability_urgent, self._probability_urgent]]
 
 
@@ -144,8 +146,6 @@ def test_onnx_classifier_loads_and_classifies(trained_bundle: dict, tmp_path) ->
     """Round-trip: convert a real trained model to ONNX, save it plus its
     sidecar exactly as convert_to_onnx.py would, load it back through
     OnnxTriageClassifier.load, and confirm it classifies without error."""
-    import json
-
     onnx_model = convert(trained_bundle)
     model_path = tmp_path / "model.onnx"
     model_path.write_bytes(onnx_model.SerializeToString())

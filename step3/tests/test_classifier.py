@@ -47,7 +47,7 @@ class _StubPipeline:
     def __init__(self, probability_urgent: float) -> None:
         self._probability_urgent = probability_urgent
 
-    def predict_proba(self, texts: list[str]) -> list[list[float]]:
+    def predict_proba(self, _texts: list[str]) -> list[list[float]]:
         return [[1 - self._probability_urgent, self._probability_urgent]]
 
 

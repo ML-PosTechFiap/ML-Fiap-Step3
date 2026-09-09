@@ -34,7 +34,7 @@ MODELS_DIR = STEP2_ROOT / "models"
     dag_id="triage_retraining",
     description="Ingest, clean, train and persist the triage text classifier.",
     schedule="@weekly",
-    start_date=datetime(2026, 1, 1),
+    start_date=datetime(2026, 1, 1, tzinfo=UTC),
     catchup=False,
     tags=["step2", "triage"],
 )

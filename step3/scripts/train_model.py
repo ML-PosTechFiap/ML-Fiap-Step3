@@ -74,7 +74,7 @@ def train(
     """Train the classifier and return (model bundle, evaluation metrics)."""
     x = df["question"]
     y = df["triage"].map(LABEL_MAP)
-    if y.isnull().any():
+    if y.isna().any():
         raise ValueError(f"Unmapped labels found: {sorted(set(df['triage']) - set(LABEL_MAP))}")
 
     x_train, x_test, y_train, y_test = train_test_split(

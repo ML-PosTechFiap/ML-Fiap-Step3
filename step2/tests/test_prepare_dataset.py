@@ -31,7 +31,7 @@ def raw_df() -> pd.DataFrame:
 
 
 def test_drops_exact_duplicates(raw_df: pd.DataFrame) -> None:
-    cleaned, report = clean(raw_df)
+    _cleaned, report = clean(raw_df)
     assert report["raw_rows"] == 6
     assert report["after_exact_dedup"] == 5  # one exact (question, triage) duplicate removed
 

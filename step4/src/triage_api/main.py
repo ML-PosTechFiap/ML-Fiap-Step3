@@ -114,7 +114,7 @@ def create_app(classifier: TriageClassifier | None = None) -> FastAPI:
         ),
     )
 
-    @application.get("/health", response_model=HealthResponse, tags=["operations"])
+    @application.get("/health", tags=["operations"])
     async def health() -> HealthResponse:
         return HealthResponse(
             status="healthy",
@@ -122,7 +122,7 @@ def create_app(classifier: TriageClassifier | None = None) -> FastAPI:
             classifier_version=active_classifier.version,
         )
 
-    @application.post("/predict", response_model=TriageResponse, tags=["triage"])
+    @application.post("/predict", tags=["triage"])
     async def predict(request: TriageRequest) -> TriageResponse:
         started_at = perf_counter_ns()
         urgency = active_classifier.classify(request.report)

@@ -28,4 +28,15 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["B", "E", "F", "I", "SIM", "UP"]
+# ARG unused-arguments, DTZ naive-datetime, FAST FastAPI-specific checks,
+# INP implicit-namespace-package, N pep8-naming, PD pandas-vet, RUF
+# ruff-specific rules, S flake8-bandit (security) were added after a manual
+# `ruff check --select ALL` sweep turned up real findings under each of
+# them (see the git history for what got fixed) -- keeping them enabled so
+# the same classes of issue get caught automatically going forward.
+select = ["ARG", "B", "DTZ", "E", "F", "FAST", "I", "INP", "N", "PD", "RUF", "S", "SIM", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# assert is how pytest expresses checks -- S101 is meant for asserts in
+# shipped/production code, not test suites.
+"tests/*" = ["S101"]
