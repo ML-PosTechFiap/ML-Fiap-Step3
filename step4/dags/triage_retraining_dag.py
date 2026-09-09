@@ -7,7 +7,11 @@ by `tests/` — so the DAG never re-implements logic that's already unit-tested.
 
 Requires the whole `step4/` directory mounted into the Airflow container
 (not just `dags/`), so `scripts/`, `data/` and `models/` are reachable as
-siblings of this file. See `docker-compose.airflow.yml`.
+siblings of this file. This repo doesn't ship a docker-compose.airflow.yml
+for this step (same as Step 3) — see step4/README.md for how training is
+actually run here (the `trainer` service in docker-compose.yml), and for
+the extra dependencies (skl2onnx, onnxruntime) plus the locale setup a
+production Airflow image would need to run convert_and_persist_onnx.
 """
 
 from __future__ import annotations
@@ -96,12 +100,20 @@ def triage_retraining():
     def convert_and_persist_onnx(sklearn_run_id: str) -> dict:
         """Convert the just-trained model to ONNX, verify it against the
         sklearn pipeline's predict_proba, and persist model + sidecar +
-        pointer."""
+        pointer.
+
+        Loads the model by `sklearn_run_id` (the exact model
+        `train_and_persist` just built, passed through XCom) rather than
+        re-reading `current_model.json` — a concurrent DAG run could have
+        overwritten that pointer in between the two tasks, which would
+        silently convert the wrong model and mislabel the sidecar's
+        `source_run_id`.
+        """
         import joblib
         from convert_to_onnx import convert, verify
 
-        pointer = json.loads((MODELS_DIR / "current_model.json").read_text(encoding="utf-8"))
-        bundle = joblib.load(pointer["model_path"])
+        model_path = MODELS_DIR / f"{sklearn_run_id}.joblib"
+        bundle = joblib.load(model_path)
 
         onnx_model = convert(bundle)
         verify(bundle, onnx_model)

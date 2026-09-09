@@ -92,10 +92,14 @@ def create_app(classifier: TriageClassifier | None = None) -> FastAPI:
             processing_time_ms=round(elapsed_ms, 4),
         )
 
-    # Step 3: request count, latency and status-code (error) metrics, scraped
-    # by Prometheus at /metrics — see prometheus/prometheus.yml and
+    # Request count, latency and status-code (error) metrics, scraped by
+    # Prometheus at /metrics — see prometheus/prometheus.yml and
     # docker-compose.yml. `path` uses the matched route template (e.g.
-    # "/predict"), not the raw URL, so it stays a low-cardinality label.
+    # "/predict"), not the raw URL, so it stays a low-cardinality label —
+    # an unmatched request (404, no route) falls back to a fixed
+    # "unmatched" label instead of the raw URL, which a scanner or a
+    # client hitting many distinct nonexistent paths could otherwise use
+    # to grow this metric's cardinality without bound.
     @application.middleware("http")
     async def record_metrics(request: Request, call_next):
         started_at = time.perf_counter()
@@ -106,7 +110,7 @@ def create_app(classifier: TriageClassifier | None = None) -> FastAPI:
             return response
         finally:
             route = request.scope.get("route")
-            path = route.path if route is not None else request.url.path
+            path = route.path if route is not None else "unmatched"
             HTTP_REQUEST_DURATION_SECONDS.labels(method=request.method, path=path).observe(
                 time.perf_counter() - started_at
             )

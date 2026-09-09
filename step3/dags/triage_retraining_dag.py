@@ -5,9 +5,11 @@ plain functions used by `scripts/download_dataset.py`, `scripts/prepare_dataset.
 and `scripts/train_model.py` — the ones covered by `tests/` — so the DAG
 never re-implements logic that's already unit-tested.
 
-Requires the whole `step2/` directory mounted into the Airflow container
+Requires the whole `step3/` directory mounted into the Airflow container
 (not just `dags/`), so `scripts/`, `data/` and `models/` are reachable as
-siblings of this file. See `docker-compose.airflow.yml`.
+siblings of this file. Unlike Step 2, this repo doesn't ship a
+docker-compose.airflow.yml for this step — see step3/README.md for how
+training here is actually run (the `trainer` service in docker-compose.yml).
 """
 
 from __future__ import annotations
