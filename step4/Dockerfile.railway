@@ -1,0 +1,62 @@
+# Railway deploy variant of Dockerfile: bakes the trained + ONNX-converted
+# model INTO the image at build time, instead of relying on the separate
+# `trainer` service + shared volume that docker-compose.yml uses locally.
+#
+# Why: Railway runs one container per service, with no docker-compose
+# orchestration (no `depends_on: service_completed_successfully`, no shared
+# named volumes between services). Without this, the API would boot fine
+# (main.py falls back to the Step 1 rule-based classifier when no model is
+# present) but would never actually serve the ONNX model this step exists to
+# demonstrate.
+#
+# Local development is unaffected: docker-compose.yml still builds the
+# original `Dockerfile` and keeps the trainer/api split. Point Railway's
+# service at this file explicitly (Settings -> Build -> Dockerfile Path:
+# Dockerfile.railway, with Root Directory: step4).
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src:/app/scripts \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
+
+WORKDIR /app
+
+RUN addgroup --system app && adduser --system --ingroup app app
+
+# onnxruntime's StringNormalizer op (used by the converted TfidfVectorizer)
+# needs a real system locale at session-init time -- python:3.12-slim ships
+# none, which fails ONNX inference with a locale::facet error otherwise.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends locales \
+    && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
+    && locale-gen \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir --requirement requirements.txt
+
+COPY src ./src
+COPY scripts ./scripts
+
+# Bake the model into the image: download -> clean -> train -> convert to
+# ONNX, the same pipeline the `trainer` service runs locally, run once here
+# as part of the build instead of at container start. Runs as root (default
+# build user) so the chown below picks up everything it writes.
+RUN python scripts/download_dataset.py \
+    && python scripts/prepare_dataset.py \
+    && python scripts/train_model.py \
+    && python scripts/convert_to_onnx.py
+
+RUN chown -R app:app /app/data /app/models
+
+USER app
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+
+CMD ["uvicorn", "triage_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
