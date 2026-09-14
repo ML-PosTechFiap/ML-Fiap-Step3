@@ -63,7 +63,18 @@ USER app
 
 EXPOSE 8000
 
+# Railway assigns the externally-routed port at runtime via the $PORT env
+# var and proxies to whatever the container actually listens on -- it does
+# NOT necessarily match the EXPOSE'd 8000. A hardcoded --port 8000 here
+# causes the platform's edge proxy to get connection-refused from a
+# healthy-looking container (502 "Application failed to respond"), which is
+# invisible in the build/deploy logs since the app itself never errors.
+# `sh -c 'exec ...'` (not bare shell form) so ${PORT:-8000} still expands but
+# `exec` replaces the shell with uvicorn instead of running it as a child --
+# otherwise SIGTERM on stop/redeploy is swallowed by the shell and Railway
+# has to wait out the grace period and SIGKILL it. Falls back to 8000 for
+# local `docker run` without a PORT env var.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+    CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT','8000') + '/health', timeout=2)"
 
-CMD ["uvicorn", "triage_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn triage_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
