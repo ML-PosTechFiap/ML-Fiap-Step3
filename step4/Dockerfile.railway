@@ -10,9 +10,16 @@
 # demonstrate.
 #
 # Local development is unaffected: docker-compose.yml still builds the
-# original `Dockerfile` and keeps the trainer/api split. Point Railway's
-# service at this file explicitly (Settings -> Build -> Dockerfile Path:
-# Dockerfile.railway, with Root Directory: step4).
+# original `Dockerfile` and keeps the trainer/api split.
+#
+# COPY paths below are prefixed with `step4/` on purpose: Railway builds
+# Dockerfile-detected services from the *repository root* as build context
+# regardless of where the Dockerfile itself lives, unless a Root Directory is
+# separately configured. Rather than depend on getting that setting right in
+# the dashboard, this file is written to work with the context Railway
+# actually uses. Point Railway's service at it with just:
+#   Settings -> Build -> Dockerfile Path: step4/Dockerfile.railway
+# (leave Root Directory empty/unset).
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -35,11 +42,11 @@ RUN apt-get update \
     && locale-gen \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./requirements.txt
+COPY step4/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --requirement requirements.txt
 
-COPY src ./src
-COPY scripts ./scripts
+COPY step4/src ./src
+COPY step4/scripts ./scripts
 
 # Bake the model into the image: download -> clean -> train -> convert to
 # ONNX, the same pipeline the `trainer` service runs locally, run once here
